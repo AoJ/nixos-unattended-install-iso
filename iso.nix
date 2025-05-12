@@ -36,6 +36,15 @@ let
       DISKO_DEVICE_MAIN=''${DEVICE_MAIN#"/dev/"} ${targetSystem.config.system.build.diskoScript} 2> /dev/null
 
       echo "Installing the system..."
+
+      export PATH=${lib.makeBinPath [
+              # hack for a progress bar
+        # https://nix.dev/manual/nix/2.18/command-ref/nix-build#opt-log-format
+        (pkgs.writeShellScriptBin "nix-env" ''
+          exec ${lib.getExe' config.nix.package "nix-env"} --log-format bar "$@"
+        '')
+      ]}:$PATH
+
       nixos-install --no-channel-copy --no-root-password --option substituters "" --system ${targetSystem.config.system.build.toplevel}
 
       echo "Done! Rebooting..."
