@@ -1,7 +1,7 @@
 ## Build the ISO image
 
 ```bash
-nix build -L .#nixosConfigurations.iso.config.system.build.isoImage
+nix build -L .#nixosConfigurations.installer.config.system.build.isoImage
 ls -l ./result/iso
 ````
 

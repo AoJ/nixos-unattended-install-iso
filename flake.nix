@@ -13,20 +13,20 @@
           ./configuration.nix
         ];
       };
-      iso = inputs.nixpkgs.lib.nixosSystem {
+      installer = inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = {
           targetSystem = inputs.self.nixosConfigurations.nixos;
         };
         modules = [
-          ./iso.nix
+          ./installer.nix
         ];
       };
     };
     packages.x86_64-linux.default = let
       pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
     in pkgs.writeShellApplication {
-      name = "iso-test";
+      name = "installer-test";
       runtimeInputs = with pkgs; [
         qemu-utils
         qemu_kvm
@@ -49,7 +49,7 @@
           -device usb-storage,drive=usbdisk \
           -drive file=$disk1,format=qcow2,if=none,id=nvm,cache=unsafe,werror=report \
           -drive if=pflash,format=raw,unit=0,readonly=on,file=${pkgs.OVMF.firmware} \
-          -drive id=usbdisk,if=none,readonly=on,file="$(echo ${inputs.self.nixosConfigurations.iso.config.system.build.isoImage}/iso/*.iso)"
+          -drive id=usbdisk,if=none,readonly=on,file="$(echo ${inputs.self.nixosConfigurations.installer.config.system.build.isoImage}/iso/*.iso)"
       '';
     };
   };
