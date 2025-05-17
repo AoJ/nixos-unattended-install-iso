@@ -11,6 +11,7 @@
         modules = [
           inputs.disko.nixosModules.disko
           ./configuration.nix
+          ./disko-config.nix
         ];
       };
       installer = inputs.nixpkgs.lib.nixosSystem {
