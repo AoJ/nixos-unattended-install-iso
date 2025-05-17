@@ -31,13 +31,19 @@
       runtimeInputs = with pkgs; [
         qemu-utils
         qemu_kvm
+        swtpm
       ];
       text = ''
-        disk1=disk1.qcow2
-        if [ ! -f $disk1 ]; then
-          qemu-img create -f qcow2 $disk1 8G
+        tempdir=$(mktemp -d)
+        mkdir "$tempdir/swtpm"
+        swtpm socket --tpmstate dir="$tempdir/swtpm" --ctrl type=unixio,path="$tempdir/swtpm-sock" --tpm2 &
+        trap 'rm -rf "$tempdir"' EXIT
+
+        disk1="$tempdir/disk1.qcow2"
+        if [ ! -f "$disk1" ]; then
+          qemu-img create -f qcow2 "$disk1" 8G
         fi
-        exec qemu-kvm \
+        qemu-kvm \
           -boot c \
           -cpu host \
           -smp cores=2 \
@@ -48,9 +54,10 @@
           -device nvme,serial=deadbeef,drive=nvm \
           -device usb-ehci \
           -device usb-storage,drive=usbdisk \
-          -drive file=$disk1,format=qcow2,if=none,id=nvm,cache=unsafe,werror=report \
+          -drive file="$disk1",format=qcow2,if=none,id=nvm,cache=unsafe,werror=report \
           -drive if=pflash,format=raw,unit=0,readonly=on,file=${pkgs.OVMF.firmware} \
-          -drive id=usbdisk,if=none,readonly=on,file="$(echo ${inputs.self.nixosConfigurations.installer.config.system.build.isoImage}/iso/*.iso)"
+          -drive id=usbdisk,if=none,readonly=on,file="$(echo ${inputs.self.nixosConfigurations.installer.config.system.build.isoImage}/iso/*.iso)" \
+          -chardev socket,id=chrtpm,path="$tempdir/swtpm-sock" -tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0
       '';
     };
   };
