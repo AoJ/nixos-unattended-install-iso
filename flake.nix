@@ -11,7 +11,8 @@
         modules = [
           inputs.disko.nixosModules.disko
           ./configuration.nix
-          ./disko-config.nix
+          # ./disko-config.nix
+          ./encrypted-impermanence.nix
         ];
       };
       installer = inputs.nixpkgs.lib.nixosSystem {

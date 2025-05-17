@@ -3,6 +3,7 @@ let
   installer = pkgs.writeShellApplication {
     name = "installer";
     runtimeInputs = with pkgs; [
+      clevis
       dosfstools
       e2fsprogs
       gawk
@@ -12,6 +13,13 @@ let
     ];
     text = ''
       set -euo pipefail
+
+      ${lib.optionalString targetSystem.config.boot.initrd.clevis.enable ''
+        if ! [ -e /dev/tpmrm0 ]; then
+          echo "TPM 2.0 module is required!"
+          exit 1
+        fi
+      ''}
 
       echo "Setting up disks..."
       for i in $(lsblk -pln -o NAME,TYPE | grep disk | awk '{ print $1 }'); do
@@ -33,7 +41,18 @@ let
         echo "Found $DEVICE_MAIN, erasing..."
       fi
 
-      DISKO_DEVICE_MAIN=''${DEVICE_MAIN#"/dev/"} ${targetSystem.config.system.build.diskoScript} 2> /dev/null
+      ${if targetSystem.config.boot.initrd.clevis.enable then ''
+        cat /proc/sys/kernel/random/uuid > /tmp/secret
+
+        DISKO_DEVICE_MAIN=''${DEVICE_MAIN#"/dev/"} ${targetSystem.config.system.build.diskoScript} 2> /dev/null < /tmp/secret
+
+        clevisSecretFile="/mnt${(lib.head (lib.attrValues targetSystem.config.boot.initrd.clevis.devices)).secretFile}"
+
+        mkdir -p "$(dirname $clevisSecretFile)"
+        clevis encrypt tpm2 '{}' > "$clevisSecretFile" < /tmp/secret
+      '' else ''
+        DISKO_DEVICE_MAIN=''${DEVICE_MAIN#"/dev/"} ${targetSystem.config.system.build.diskoScript} 2> /dev/null
+      ''}
 
       echo "Installing the system..."
 
@@ -64,12 +83,9 @@ in
   ];
 
   boot.kernelParams = [ "systemd.unit=getty.target" ];
+  boot.supportedFilesystems.zfs = true;
 
-  console =  {
-    earlySetup = true;
-    font = "ter-v16n";
-    packages = [ pkgs.terminus_font ];
-  };
+  networking.hostId = "67faa5a0";
 
   isoImage.isoName = "${config.isoImage.isoBaseName}-${config.system.nixos.label}-${pkgs.stdenv.hostPlatform.system}.iso";
   isoImage.makeEfiBootable = true;
@@ -85,5 +101,5 @@ in
     };
   };
 
-  system.stateVersion = "24.05";
+  system.stateVersion = lib.mkDefault lib.trivial.release;
 }
