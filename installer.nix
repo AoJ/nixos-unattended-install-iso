@@ -33,10 +33,7 @@ let
         echo "Found $DEVICE_MAIN, erasing..."
       fi
 
-      ${if targetSystem.config.boot.initrd.clevis.enable then ''
-        cat /proc/sys/kernel/random/uuid > /tmp/secret
-
-        DISKO_DEVICE_MAIN=''${DEVICE_MAIN#"/dev/"} ${targetSystem.config.system.build.diskoScript} 2> /dev/null < /tmp/secret
+      DISKO_DEVICE_MAIN=''${DEVICE_MAIN#"/dev/"} ${targetSystem.config.system.build.diskoScript} 2> /dev/null
 
       echo "Installing the system..."
 

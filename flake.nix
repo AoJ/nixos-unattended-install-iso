@@ -1,5 +1,5 @@
 {
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2411.713818.tar.gz";
 
   inputs.disko.url = "github:nix-community/disko/master";
   inputs.disko.inputs.nixpkgs.follows = "nixpkgs";
